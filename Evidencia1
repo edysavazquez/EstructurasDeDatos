@@ -1,0 +1,59 @@
+tabla = []
+mas = 1
+code = 0
+opcion=0
+goback=1
+
+while goback==1:
+    print("\n***MENU***\n")
+    print("1-Registrar una Venta")
+    print("2-Consultar una Venta")
+    print("X-Salir")
+
+    opcion = input("Elige una opcion: ")
+
+    if opcion == '1':
+        code += 1
+        mas=1
+        while mas == 1:
+            descripcion = input("Descripcion del Articulo: ")
+            cantidad = int(input("Cantidad de piezas vendidas: "))
+            precio = float(input("Precio del articulo: "))
+
+            registro = list()
+            registro.append(code)
+            registro.append(descripcion)
+            registro.append(cantidad)
+            registro.append(precio)
+            registro.append(cantidad * precio)
+            tabla.append(registro)
+
+            total = 0
+            for registro in tabla:
+                if registro[0]==code:
+                    total += registro[4]
+
+            mas = int(input("\n ¿Deseas capturar otro articulo? \n(1-Si / 0-No): "))
+            if mas == 0:
+                print("\nSu total es:", total, "\n")
+
+        goback = int(input("Desea volver al Menu? \n(1-Si / 0-No): "))
+
+    elif opcion == '2':
+        print("\nConsultar Venta\n")
+
+        codigo = int(input("Dime qué codigo de venta deseas consultar: "))
+        for registro in tabla:
+            if registro[0] == codigo:
+                print(registro)
+            else:
+                print("Codigo de venta no valido.")
+        goback = int(input("Desea volver al Menu? \n(1-Si / 0-No): "))
+
+    elif opcion.upper() == 'X':
+        print("\nGracias por utilizar el programa\n")
+        break
+
+    else:
+        print("\nError, intente otra vez\n")
+        goback = int(input("Desea volver al Menu? \n(1-Si / 0-No): "))
