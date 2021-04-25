@@ -1,0 +1,143 @@
+import datetime
+import csv
+import os.path
+columnas = ("folio", "descripcion", "cantidad", "precio", "total del articulo", "fecha")
+tabla = []
+codenext = list()
+mas = 1
+
+opcion=0
+goback=1
+
+while goback==1:
+    print("\n***MENU***\n")
+    print("1-Registrar una Venta")
+    print("2-Consultar una Venta")
+    print("3-Obtener un reporte de ventas para una fecha en específico")
+    print("X-Salir")
+
+    opcion = input("Elige una opcion: ")
+# --------------------------------------------------------------------------------------------------------------- #
+    if opcion == '1':
+
+        if not os.path.exists("ventas.csv"):
+            code = 1
+        else:
+            with open("ventas.csv", "r") as archivo:
+                lector = csv.reader(archivo, delimiter=",")
+                registros = 0
+                for folio, descripcion, cantidad, precio, totaldelarticulo, fecha in lector:
+                    if registros == 0:
+                        columnas = (folio, descripcion, cantidad, precio, totaldelarticulo, fecha)
+                        registros = registros + 1
+                    else:
+                        folio = int(folio)
+                        #last_line = archivo.readlines()[-1]
+                        codenext.append([folio, descripcion, cantidad, precio, totaldelarticulo, fecha])
+        if codenext:
+            code = codenext[-1][0] + 1
+
+        mas=1
+        print("\nRegistrar una Venta\n")
+        fecha = input("Ingrese la fecha de la compra (dd/mm/aaaa): ")
+        fecha = datetime.datetime.strptime(fecha, "%d/%m/%Y").date()
+        while mas == 1:
+
+            descripcion = input("Descripcion del Articulo: ")
+            cantidad = int(input("Cantidad de piezas vendidas: "))
+            precio = float(input("Precio del articulo: "))
+
+            registro = list()
+            registro.append(code)
+            registro.append(descripcion)
+            registro.append(cantidad)
+            registro.append(precio)
+            registro.append(cantidad * precio)
+            registro.append(fecha)
+
+            tabla.append(registro)
+
+            total = 0
+            for registro in tabla:
+                if registro[0]==code:
+                    total += registro[4]
+
+            mas = int(input("\n ¿Deseas capturar otro articulo? \n(1-Si / 0-No): "))
+
+            if mas == 0:
+                print("\nSu total es:", total, "\n")
+                if not os.path.exists("ventas.csv"):
+                    with open("ventas.csv", "w", newline="") as archivo:
+                        registrador = csv.writer(archivo)
+                        registrador.writerow(columnas)
+                        registrador.writerows(tabla)
+                    break
+                else:
+                    with open("ventas.csv", "a", newline="") as archivo:
+                        registrador = csv.writer(archivo)
+                        for registro in tabla:
+                            if registro[0]==code:
+                                registrador.writerow(registro)
+
+        goback = int(input("Desea volver al Menu? \n(1-Si / 0-No): "))
+# --------------------------------------------------------------------------------------------------------------- #
+    elif opcion == '2':
+        print("\nConsultar Venta\n")
+
+        codeventas = list()
+
+        codigo = int(input("Dime qué codigo de venta deseas consultar: "))
+
+        with open("ventas.csv", "r") as archivo:
+            lector = csv.reader(archivo, delimiter=",")
+            registros = 0
+            for folio, descripcion, cantidad, precio, totaldelarticulo, fecha in lector:
+                if registros == 0:
+                    columnas = (folio, descripcion, cantidad, precio, totaldelarticulo, fecha)
+                    registros = registros + 1
+                else:
+                    folio = int(folio)
+                    codeventas.append([folio, descripcion, cantidad, precio, totaldelarticulo, fecha])
+
+        for each in codeventas:
+           if each[0] == codigo:
+               print(each)
+
+        else:
+            print("Codigo de ventas no valido.\n")
+
+        goback = int(input("Desea volver al Menu? \n(1-Si / 0-No): "))
+# --------------------------------------------------------------------------------------------------------------- #
+    elif opcion == '3':
+        print("\nObtener un reporte de ventas para una fecha en específico\n")
+        dateventas = list()
+        fecha_capturada = input("Dime una fecha (aaaa/mm/dd): \n")
+        fecha_procesada = datetime.datetime.strptime(fecha_capturada, "%Y/%m/%d").date()
+
+        with open("ventas.csv", "r") as archivo:
+            lector = csv.reader(archivo, delimiter=",")
+            registros = 0
+            for folio, descripcion, cantidad, precio, totaldelarticulo, fecha in lector:
+                if registros == 0:
+                    columnas = (folio, descripcion, cantidad, precio, totaldelarticulo, fecha)
+                    registros = registros + 1
+                else:
+                    fecha = datetime.datetime.strptime(fecha, "%Y-%m-%d").date()
+                    dateventas.append([folio, descripcion, cantidad, precio, totaldelarticulo, fecha])
+
+        for each in dateventas:
+            if each[5]==fecha_procesada:
+                print(each)
+
+        else:
+            print("No hay ventas para esa fecha.\n")
+
+        goback = int(input("Desea volver al Menu? \n(1-Si / 0-No): "))
+# --------------------------------------------------------------------------------------------------------------- #
+    elif opcion.upper() == 'X':
+        print("\nGracias por utilizar el programa\n")
+        break
+# --------------------------------------------------------------------------------------------------------------- #
+    else:
+        print("\nError, intente otra vez\n")
+        goback = int(input("Desea volver al Menu? \n(1-Si / 0-No): "))
