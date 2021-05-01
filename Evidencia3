@@ -28,7 +28,8 @@ while goback==1:
     opcion = input("Elija una opcion: ")
 
     initial_code=0
-    initial_date=datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
+    initial_date = "01/01/1800"
+    initial_date = datetime.datetime.strptime(initial_date, "%d/%m/%Y").date()
     initial_total=0
     initial_text="-"
 
