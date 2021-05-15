@@ -1,0 +1,157 @@
+import sys
+import datetime
+import sqlite3
+from sqlite3 import Error
+
+goback=1
+
+try:
+    with sqlite3.connect("Ventas.db") as conn:
+        c = conn.cursor()
+        c.execute("CREATE TABLE IF NOT EXISTS ventas (clave_v INTEGER PRIMARY KEY, fecha TIMESTAMP NOT NULL, total REAL NOT NULL);")
+        c.execute("CREATE TABLE IF NOT EXISTS articulos (clave_a INTEGER PRIMARY KEY, descripcion TEXT NOT NULL, cantidad INTEGER NOT NULL, precio REAL NOT NULL, total_articulo REAL NOT NULL, venta INTEGER NOT NULL, FOREIGN KEY(venta) REFERENCES venta(clave_v));")
+        #print("Tabla creada exitosamente")
+except Error as e:
+    print (e)
+except:
+    print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+finally:
+    conn.close()
+
+while goback==1:
+    print("\n***MENU***\n")
+    print("1-Registrar una Venta")
+    print("2-Consultar Ventas de Un Día Especifico")
+    print("X-Salir")
+
+    opcion = input("Elija una opcion: ")
+
+    initial_code=0
+    initial_date = "01/01/1800"
+    initial_date = datetime.datetime.strptime(initial_date, "%d/%m/%Y").date()
+    initial_total=0
+    initial_text="-"
+
+    with sqlite3.connect("Ventas.db") as conn:
+        mi_cursor = conn.cursor()
+        initial_val = {"folio": initial_code, "fecha": initial_date, "total": initial_total}
+        mi_cursor.execute("DELETE FROM ventas WHERE clave_v = :folio;", initial_val)
+        mi_cursor.execute("INSERT INTO ventas VALUES(:folio, :fecha, :total)", initial_val)
+        mi_cursor.execute("DELETE FROM articulos WHERE clave_a = :folio;", initial_val)
+        initial_val_a = {"folio": initial_code, "descripcion": initial_text, "cantidad": initial_total, "precio": initial_total,
+                                 "total_articulo": initial_total, "idventa": initial_total}
+        mi_cursor.execute("INSERT INTO articulos VALUES(:folio, :descripcion, :cantidad, :precio, :total_articulo, :idventa)", initial_val_a)
+
+    if opcion == '1':
+        print("\nRegistrar Venta\n")
+        try:
+            with sqlite3.connect("Ventas.db") as conn:
+                mi_cursor = conn.cursor()
+                mi_cursor.execute("SELECT max(clave_v) FROM ventas")
+                registros = mi_cursor.fetchall()
+
+                if not registros=='None':
+                    rnum = int(registros[-1][0])
+                    venta = rnum+1
+
+                date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
+
+                mas = 1
+                while mas == 1:
+                    descripcion = input("Descripcion del Articulo: \n")
+                    while descripcion == "" or descripcion.isspace():
+                        print("Error, descripción vacía. Favor de introducir descripción.")
+                        descripcion = input("Descripcion del Articulo: \n")
+
+                    cantidad = int(input("Cantidad de piezas vendidas: \n"))
+                    while cantidad<=0:
+                        print("Error, cantidad incorrecta. favor de introducir cantodad correcta.")
+                        cantidad = int(input("Cantidad de piezas vendidas: \n"))
+                    precio = float(input("Precio del articulo: \n"))
+                    while precio<=0:
+                        print("Error, precio incorrecto. favor de introducir precio correcto.")
+                        precio = float(input("Precio del articulo: \n"))
+                    total_articulo = precio * cantidad
+
+                    mi_cursor.execute("SELECT max(clave_a) FROM articulos")
+                    items = mi_cursor.fetchall()
+
+                    if not items == 'None':
+                        things = int(items[0][0])
+                        things = things + 1
+
+                    valores_a = {"folio": things, "descripcion": descripcion, "cantidad": cantidad, "precio": precio,
+                                 "total_articulo": total_articulo, "venta": venta}
+                    mi_cursor.execute(
+                        "INSERT INTO articulos VALUES(:folio, :descripcion, :cantidad, :precio, :total_articulo, :venta)",
+                        valores_a)
+                    values = {"venta":venta}
+                    mi_cursor.execute("SELECT sum(total_articulo) FROM articulos WHERE venta=:venta", values)
+                    tot = mi_cursor.fetchall()
+
+                    if not tot == 'None':
+                        total = int(tot[0][0])
+
+                    mas = int(input("\n ¿Deseas capturar otro articulo? \n(1-Si / 0-No): "))
+                    if mas==0:
+                        print("\nSu total es:", total, "\n")
+
+                valores_v = {"folio": venta, "fecha": date, "total": total}
+                mi_cursor.execute("INSERT INTO ventas VALUES(:folio, :fecha, :total)", valores_v)
+
+        except Error as e:
+            print(e)
+        except:
+            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+        finally:
+            if (conn):
+                conn.close()
+
+        goback = int(input("\nDesea volver al Menu? \n(1-Si / 0-No): "))
+
+    elif opcion == '2':
+        print("\nConsultar Ventas de Un Día Especifico\n")
+        fecha_consultar = input("Dime una fecha (dd/mm/aaaa): ")
+        fecha_consultar = datetime.datetime.strptime(fecha_consultar, "%d/%m/%Y").date()
+
+        try:
+            with sqlite3.connect("Ventas.db",detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+                mi_cursor = conn.cursor()
+                valores = {"fecha_c": fecha_consultar}
+                mi_cursor.execute("SELECT clave_a, descripcion, cantidad, precio, total_articulo, venta FROM articulos JOIN ventas ON venta=clave_v WHERE DATE(fecha) = :fecha_c", valores)
+                registro = mi_cursor.fetchall()
+
+                criterios = {"fecha": fecha_consultar}
+                mi_cursor.execute("SELECT sum(total) FROM ventas WHERE DATE(fecha) = :fecha;", criterios)
+                registros_total = mi_cursor.fetchall()
+
+                if registro:
+                    print(f"VENTAS DEL {fecha_consultar}")
+                    print("Clave\tDesripción\tCantidad\tPrecio\tTotal Articulo")
+                    for folio, descripcion, cantidad, precio, total_articulo, venta in registro:
+                        print(f"{venta}\t\t{descripcion}\t\t{cantidad}\t\t{precio}\t\t{total_articulo}")
+                    if registros_total:
+                        for total in registros_total:
+                            print(f"Total del día = ${total[0]}\n")
+                    else:
+                        print("No se encontraron ventas en esta fecha.\n")
+                else:
+                    print(f"No se encontró una venta asociada con la fecha {fecha_consultar}")
+
+        except Error as e:
+            print(e)
+        except:
+            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+        finally:
+            if (conn):
+                conn.close()
+                print("\nGracias por consultar.")
+
+        goback = int(input("\nDesea volver al Menu? \n(1-Si / 0-No): "))
+
+    elif opcion.upper() == 'X':
+        print("\nGracias por utilizar el programa\n")
+        break
+    else:
+        print("\nError, opción no valida. Intente otra vez\n")
+        goback = int(input("\nDesea volver al Menu? \n(1-Si / 0-No): "))
